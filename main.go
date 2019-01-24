@@ -86,7 +86,7 @@ func init() {
 	flag.DurationVar(&maxTimeout, "max-timeout", 1*time.Hour, "Maximum valid session idle timeout in time.Duration format")
 	flag.DurationVar(&newSessionAttemptTimeout, "session-attempt-timeout", 30*time.Second, "New session attempt timeout in time.Duration format")
 	flag.DurationVar(&sessionDeleteTimeout, "session-delete-timeout", 30*time.Second, "Session delete timeout in time.Duration format")
-	flag.DurationVar(&serviceStartupTimeout, "service-startup-timeout", 30*time.Second, "Service startup timeout in time.Duration format")
+	flag.DurationVar(&serviceStartupTimeout, "service-startup-timeout", 60*time.Second, "Service startup timeout in time.Duration format")
 	flag.BoolVar(&version, "version", false, "Show version and exit")
 	flag.Var(&mem, "mem", "Containers memory limit e.g. 128m or 1g")
 	flag.Var(&cpu, "cpu", "Containers cpu limit as float e.g. 0.2 or 1.0")
@@ -177,6 +177,14 @@ func init() {
 		NameSpace:            nameSpace,
 		InKubernetes:         enableKubernetesSupport,
 	}
+
+	if enableKubernetesSupport {
+		disableDocker = true
+		manager = &service.DefaultManager{Environment: &environment, Config: conf}
+		log.Println("[-] [INIT] [Selenoid is running with kubernetes support]")
+		return 
+	}
+
 	if disableDocker {
 		manager = &service.DefaultManager{Environment: &environment, Config: conf}
 		if logOutputDir != "" && captureDriverLogs {
@@ -194,24 +202,20 @@ func init() {
 	}
 	ip, _, _ := net.SplitHostPort(u.Host)
 	environment.IP = ip
-	if enableKubernetesSupport {
-		log.Println("[-] [INIT] [Selenoid is running with kubernetes support]")
-	} else {
-		cli, err = docker.CreateCompatibleDockerClient(
-			func(specifiedApiVersion string) {
-				log.Printf("[-] [INIT] [Using Docker API version: %s]", specifiedApiVersion)
-			},
-			func(determinedApiVersion string) {
-				log.Printf("[-] [INIT] [Your Docker API version is %s]", determinedApiVersion)
-			},
-			func(defaultApiVersion string) {
-				log.Printf("[-] [INIT] [Did not manage to determine your Docker API version - using default version: %s]", defaultApiVersion)
-			},
-		)
-		if err != nil {
-			log.Fatalf("[-] [INIT] [New docker client: %v]", err)
-		}
-    }
+	cli, err = docker.CreateCompatibleDockerClient(
+		func(specifiedApiVersion string) {
+			log.Printf("[-] [INIT] [Using Docker API version: %s]", specifiedApiVersion)
+		},
+		func(determinedApiVersion string) {
+			log.Printf("[-] [INIT] [Your Docker API version is %s]", determinedApiVersion)
+		},
+		func(defaultApiVersion string) {
+			log.Printf("[-] [INIT] [Did not manage to determine your Docker API version - using default version: %s]", defaultApiVersion)
+		},
+	)
+	if err != nil {
+		log.Fatalf("[-] [INIT] [New docker client: %v]", err)
+	}
 	manager = &service.DefaultManager{Environment: &environment, Client: cli, Config: conf}
 }
 
