@@ -3,7 +3,7 @@ name: build-local
 on:
   push:
     branches:
-      - master
+      - develop
 
 jobs:
   golang:
