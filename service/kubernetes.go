@@ -160,7 +160,7 @@ func deletePod(name string, ns string, client *kubernetes.Clientset, requestID u
 }
 
 func parseImageName(image string) (container string) {
-	maxLength := 64
+	maxLength := 63
 	if len(image) > maxLength {
 		image = image[len(image)-maxLength:]
 	}
