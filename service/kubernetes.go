@@ -54,7 +54,7 @@ func (k *Kubernetes) StartWithCancel() (*StartedService, error) {
 	requestID := k.RequestId
 	image := k.Service.Image.(string)
 	ns := k.Environment.NameSpace
-	container := parceImageName(image)
+	container := parseImageName(image)
 
 	v1Pod := &apiv1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
@@ -159,7 +159,11 @@ func deletePod(name string, ns string, client *kubernetes.Clientset, requestID u
 	log.Printf("[%d] [POD_DELETED] [%s] [%s]", requestID, name, ns)
 }
 
-func parceImageName(image string) (container string) {
+func parseImageName(image string) (container string) {
+	maxLength := 64
+	if len(image) > maxLength {
+		image = image[len(image)-maxLength:]
+	}
 	pref, err := regexp.Compile("[^a-zA-Z0-9]+")
 	if err != nil {
 		container = "selenoid_browser"
